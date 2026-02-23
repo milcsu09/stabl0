@@ -1,0 +1,28 @@
+
+\ Discards the element on top.
+[!a] @drop forall S a. [S a -- S]
+
+\ Discards the element second to top.
+[{!a !b} b] @nip forall S a b. [S a b -- S b]
+
+\ Duplicates the element on top.
+[!a a a] @dup forall S a. [S a -- S a a]
+
+\ Duplicates the element second to top.
+[{!a !b} a b a] @over forall S a b. [S a b -- S a b a]
+
+\ Swaps the two elements on top.
+[{!a !b} b a] @swap forall S a b. [S a b -- S b a]
+
+\ Cycles the three elements on top towards the top (rightward).
+[{!a !b !c} c a b] @rotr forall S a b c. [S a b c -- S c a b]
+
+\ Cycles the three elements on top towards the bottom (leftward).
+[{!a !b !c} b c a] @rotl forall S a b c. [S a b c -- S b c a]
+
+\ Applies the effect on top.
+[@f [R -- S] f] @apply forall R S. [R [R -- S] -- S]
+
+\ Applies the effect second to top.
+[{@f [R -- S] !a} f a] @dip forall R S a. [R [R -- S] a -- S a]
+

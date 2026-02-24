@@ -26,3 +26,7 @@
 \ Applies the effect second to top.
 [{@f [R -- S] !a} f a] @dip forall R S a. [R [R -- S] a -- S a]
 
+[dup Print] @show forall S a. [S a -- S a]
+
+[{!x @f [ S -- R ]} [x f]] @curry forall R S T a. [S a [R a -- T] -- S [R -- T]]
+

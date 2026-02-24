@@ -1076,9 +1076,22 @@ class Scope(Generic[T]):
 ## Infer
 
 
-def validate_effect(effect: Type_Effect):
+def validate_effect(effect: Type_Effect, scope: Scope[Dict[str, Scheme]]):
+    ftv = set()
+
+    current: Scope[Dict[str, Scheme]] = scope
+
+    while True:
+        ftv |= set().union(*(s.free_type_variables() for s in current.lets.values()))
+        ftv |= set().union(*(s.free_type_variables() for s in current.defs.values()))
+
+        if current.parent is None:
+            break
+
+        current = current.parent
+
     for tv in effect.rhs.free_type_variables_exclude_effect():
-        if tv not in reachable_variables(effect):
+        if tv not in reachable_variables(effect) | ftv:
             s1, s2 = align_types(effect.lhs, effect.rhs)
 
             msg = f"""
@@ -1272,7 +1285,7 @@ def infer(block: Tree_Block, parent: Optional[Scope[Dict[str, Scheme]]] = None) 
 
         apply(result_s)
 
-    validate_effect(result)
+    validate_effect(result, scope)
 
     return result, s
 
@@ -1594,8 +1607,8 @@ class Compiler:
             capture_i = 0
 
             for capture in sorted(list(block.captured_lets)):
-                if capture in self.lets or capture in self.lets:
-                    raise Error(block.location, "redefined `{}'".format(capture));
+                # if capture in self.lets or capture in self.lets:
+                #     raise Error(block.location, "redefined `{}'".format(capture));
 
                 self.lets[capture] = self.slot_id
 
@@ -1613,8 +1626,8 @@ class Compiler:
                 capture_i += 1
 
             for capture in sorted(list(block.captured_defs)):
-                if capture in self.lets or capture in self.defs:
-                    raise Error(block.location, "redefined `{}'".format(capture));
+                # if capture in self.lets or capture in self.defs:
+                #     raise Error(block.location, "redefined `{}'".format(capture));
 
                 self.defs[capture] = self.slot_id
 
@@ -1678,8 +1691,8 @@ class Compiler:
                     print("  }")
 
                 case Tree_Let(name = name):
-                    if name in self.lets or name in self.defs:
-                        raise Error(location, "redefined `{}'".format(name));
+                    # if name in self.lets or name in self.defs:
+                    #     raise Error(location, "redefined `{}'".format(name));
 
                     self.lets[name] = self.slot_id
 
@@ -1696,8 +1709,8 @@ class Compiler:
                     self.slot_id += 1
 
                 case Tree_Def(name = name):
-                    if name in self.lets or name in self.defs:
-                        raise Error(location, "redefined `{}'".format(name));
+                    # if name in self.lets or name in self.defs:
+                    #     raise Error(location, "redefined `{}'".format(name));
 
                     self.defs[name] = self.slot_id
 
@@ -1757,11 +1770,11 @@ class Compiler:
                         capture_i = 0
 
                         for x in sorted(list(tree.captured_lets)):
-                            compound.append(f"{self.slot_name(self.lets[x])}")
+                            compound.append(f"{self.slot_name(self.lets[x])} /* !{x} */")
                             capture_i += 1
 
                         for x in sorted(list(tree.captured_defs)):
-                            compound.append(f"{self.slot_name(self.defs[x])}")
+                            compound.append(f"{self.slot_name(self.defs[x])} /* @{x} */")
                             capture_i += 1
 
                         literal = f"(struct value *[]) {{ {', '.join(compound)} }}"
@@ -1863,6 +1876,9 @@ def main():
         print(f"usage: {sys.argv[0]} <file>", file=sys.stderr)
         exit(1)
 
+    if (inline := "--inline" in sys.argv):
+        sys.argv.remove("--inline")
+
     PATH = sys.argv[1]
 
     BASE   = PATH[:-len(".stabl")]
@@ -1872,6 +1888,9 @@ def main():
         print(f"Parsing...", end="", file=sys.stderr, flush=True)
 
         tree = Parser(try_read(PATH), PATH).parse()
+
+        if inline:
+            tree_inline(tree)
 
         print(f"{CLEAR_LINE}Checking...", end="", file=sys.stderr, flush=True)
 
@@ -1903,7 +1922,9 @@ def main():
         if result.returncode != 0:
             raise Error(None, "gcc failed:\n" + result.stderr)
 
-        print(f"{CLEAR_LINE}Done.", file=sys.stderr)
+        print(f"{CLEAR_LINE}{PATH} -- {PATH_C} {BASE}", file=sys.stderr)
+        if inline:
+            print(f"  (blocks inline'd)", file=sys.stderr)
 
     except Error as e:
         print(file=sys.stderr)

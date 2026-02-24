@@ -913,22 +913,22 @@ value_fprint (FILE *stream, struct value *value)
     }
 
 #ifdef DEBUG
-  // if (!value->debug_trace)
-  //   return;
+  if (!value->debug_trace)
+    return;
 
-  // fprintf (stream, " { ");
+  fprintf (stream, " { ");
 
-  // for (struct value_trace *trace = value->debug_trace; trace; trace = trace->next)
-  //   {
-  //     // fprintf (stream, "\"%s\": \"%s\"", trace->location, trace->transform);
+  for (struct value_trace *trace = value->debug_trace; trace; trace = trace->next)
+    {
+      // fprintf (stream, "\"%s\": \"%s\"", trace->location, trace->transform);
 
-  //     fprintf (stream, "\033[92m%s\033[0m %s", trace->transform, trace->location);
+      fprintf (stream, "\033[92m%s\033[0m %s", trace->transform, trace->location);
 
-  //     if (trace->next)
-  //       fprintf (stream, " ");
-  //   }
+      if (trace->next)
+        fprintf (stream, " ");
+    }
 
-  // fprintf (stream, " }");
+  fprintf (stream, " }");
 #endif
 }
 

@@ -1,13 +1,10 @@
 Import "Prelude"
 
-[1 [over] [over * swap 1 - swap] While nip] @factorial forall S. [S Real -- S Real]
+[{@f [ S -- R ] @g [ S -- R ]} [ f g ]] @compose forall R S T U. [R [S -- T] [T -- U] -- R [S -- U]]
 
-1 factorial Print
-2 factorial Print
-3 factorial Print
-4 factorial Print
-5 factorial Print
-6 factorial Print
-7 factorial Print
-8 factorial Print
+
+[ dup * ] @square forall S. [S Real -- S Real]
+[ 1   + ] @succ   forall S. [S Real -- S Real]
+
+4 [ succ ] [ square ] compose apply Print
 
